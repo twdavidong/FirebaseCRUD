@@ -3,7 +3,7 @@ import "./App.css";
 import {db} from "./firebase-config";
 import {collection, getDocs , addDoc, serverTimestamp, updateDoc, doc, deleteDoc} from "firebase/firestore"; 
 
-function App() {
+function App() { // function always start with Capital letter
 
   const [newLaptop, setNewLaptop] = useState([]);
   const [newLocation, setNewLocation] = useState([]);
@@ -16,28 +16,43 @@ function App() {
 
   // create a new laptop
   const createLaptop = async () => {
-      await addDoc(laptopsCollectionRef, {laptopID: newLaptop, location: newLocation, user: newUser, timeLogged: serverTimestamp(), availability: newAvailability});
-      window.location.reload(false); // force refresh
-  }; 
-  
+    var x = false;
+    
+    await addDoc(laptopsCollectionRef, {laptopID: newLaptop, location: newLocation, user: newUser, timeLogged: serverTimestamp(), availability: x});
+    window.location.reload(false); // force refresh
+}; 
+
+// *separate out counting laptops and CRUD laptops
+ // !enable returnLaptop
+ // ? disable returnLaptop
     const toggleStatus = async (laptopID, availability) => {
       const userDoc = doc(db,"laptops",laptopID);
-     const newFields = {availability:!availability}
-      await updateDoc(userDoc, newFields);
+      const newFields = {availability:!availability};
+      const newFields1 = {timeLogged: serverTimestamp()};
+      await updateDoc(userDoc, newFields, newFields1);
       window.location.reload(false);
     };
 
+    /*
+function checkState(newAvailability) {
+  if (newAvailability === true) {
+
+  }
+}
+*/
+
   // delete database
-  const deleteLaptop = async (laptopID) => {
+  /*
+  const returnLaptop = async (laptopID) => {
     const userDoc = doc(db,"laptops",laptopID);
     await deleteDoc(userDoc);
     window.location.reload(false); // force refresh
   }
+  */
 
   useEffect(() => {  // it is a function that is called immediately when the website is rendered
     const getLaptops = async () => {  // making API call w async function  
       const data = await getDocs(laptopsCollectionRef); // making call to the data, return document collection from 
-      console.log(data); 
       setLaptops(data.docs.map((doc) => ({...doc.data(), id:doc.id }))) // play around with this to get specific data
     };
 
@@ -46,7 +61,6 @@ function App() {
 
       return (
           <div className="App">
-                <table>
                 <tr>
                   <td><select name="Laptop" id="id" onChange={(event) => {
                               setNewLaptop(event.target.value);
@@ -69,21 +83,13 @@ function App() {
                         onChange={(event) => {
                         setNewUser(event.target.value);
                         }}/></td>
-
-                <td><select name="Availability" id="availability" onChange={(event) => {
-                        setAvailability(event.target.value);
-                        }}>"Availability"
-                            <option hidden value="default">Select An Option</option>
-                            <option value="Returned">Returned</option>
-                            <option value="Taken">Taken</option>
-                  </select></td>
-
-                  <button onClick={createLaptop}>Create Laptop</button>
-                  </tr>
-
-                  <tr><td>Laptop</td><td>Location</td><td>User</td><td>Date</td><td>Time</td><td>Availability</td></tr>
-
-                          {laptops.map((laptop) => { // array.map(function(currentValue, index, arr), thisValue), laptop is an array
+                  
+                  <button onClick={createLaptop}>Take Laptop</button>
+                  </tr><table>
+                  <thead>
+                  <tr><th>Laptop</th><th>Location</th><th>User</th><th>Date</th><th>Time</th><th>Availability</th></tr></thead>
+                         <tbody> 
+                          {laptops.filter(laptop => laptop.availability === true).map((laptop) =>  { // array.map(function(currentValue, index, arr), thisValue), laptop is an array
                             return (<tr>
                                         <td>{laptop.laptopID}</td>
                                         <td>{laptop.location}</td>
@@ -91,14 +97,28 @@ function App() {
                                         <td>{new Date(laptop.timeLogged.seconds * 1000).toLocaleDateString("en-UK")}</td>
                                         <td>{new Date(laptop.timeLogged.seconds * 1000).toLocaleTimeString()}</td>
                                         <td>
-                                          <input type="checkbox" id="check" class="toggle" onChange={() => toggleStatus(laptop.availability)} checked={laptop.availability ? "checked": ""}>
+                                          <input type="checkbox" id="check" className="toggle" onChange={() => toggleStatus(laptop.availability)} checked={laptop.availability ? "checked": ""}>
                                           </input>
-                                        <label for={"check"} id="text" onClick={() => toggleStatus(laptop.id, laptop.availability)}></label>
+                                        <label htmlFor={"check"} onClick={() => toggleStatus(laptop.id, laptop.availability)}></label>
                                         
                                       </td>
-                                      <button onClick={() => {deleteLaptop(laptop.id)}}>Delete Laptop</button>
                                 </tr>)  
-                          })} 
+                          })}
+                          {laptops.filter(laptop => laptop.availability === false).map((laptop) =>  { // array.map(function(currentValue, index, arr), thisValue), laptop is an array
+                            return (<tr>
+                                        <td>{laptop.laptopID}</td>
+                                        <td>{laptop.location}</td>
+                                        <td>{laptop.user}</td>
+                                        <td>{new Date(laptop.timeLogged.seconds * 1000).toLocaleDateString("en-UK")}</td>
+                                        <td>{new Date(laptop.timeLogged.seconds * 1000).toLocaleTimeString()}</td>
+                                        <td>
+                                          <input type="checkbox" id="check" className="toggle" onChange={() => toggleStatus(laptop.availability)} checked={laptop.availability ? "checked": ""}>
+                                          </input>
+                                        <label htmlFor={"check"} onClick={() => toggleStatus(laptop.id, laptop.availability)}></label>                                        
+                                      </td>
+                                </tr>)  
+                          })}
+                          </tbody>
                   </table>
               </div>
             );  // end of first return ()        
